@@ -1,59 +1,163 @@
 ﻿@page "/wiki"
 @using DMScreen.Client.Models
-    @using DMScreen.Client.Services
-    @inject WikiService WikiService
+@using DMScreen.Client.Services
+@inject WikiService WikiService
 
-    <PageTitle>DM Wiki</PageTitle>
+<PageTitle>DM Wiki</PageTitle>
 
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Kütüphane (Wiki)</h1>
-    <p>Oyunundaki tüm canavarlar ve eşyalar burada yer alıyor.</p>
+    <div>
+        <button class="btn btn-primary me-2" @onclick="ToggleItemForm">
+            <i class="bi bi-plus-circle"></i> + Yeni Eşya
+        </button>
+        <button class="btn btn-danger" @onclick="ToggleMonsterForm">
+            <i class="bi bi-plus-circle"></i> + Yeni Canavar
+        </button>
+    </div>
+</div>
 
-    <div class="row">
-    <div class="col-md-6">
-    <h3>Eşyalar (@WikiService.Items.Count)</h3>
-    <table class="table table-striped table-bordered">
-    <thead class="table-dark">
-    <tr>
-    <th>İsim</th>
-    <th>Tür</th>
-    <th>Açıklama</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var item in WikiService.Items)
+@if (isItemFormOpen)
 {
-    <tr>
-        <td><strong>@item.Name</strong></td>
-        <td><span class="badge bg-secondary">@item.Type</span></td>
-        <td>@item.Description</td>
-        </tr>
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">Yeni Eşya Oluştur</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">İsim</label>
+                    <input type="text" class="form-control" @bind="newItem.Name" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tür (Silah, İksir vb.)</label>
+                    <input type="text" class="form-control" @bind="newItem.Type" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Değer (Altın)</label>
+                    <input type="number" class="form-control" @bind="newItem.Value" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Açıklama</label>
+                    <textarea class="form-control" @bind="newItem.Description"></textarea>
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-success" @onclick="SaveItem">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="ToggleItemForm">İptal</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
-</tbody>
-    </table>
+
+@if (isMonsterFormOpen)
+{
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">Yeni Canavar Oluştur</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">İsim</label>
+                    <input type="text" class="form-control" @bind="newMonster.Name" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Zırh (AC)</label>
+                    <input type="number" class="form-control" @bind="newMonster.ArmorClass" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Can (HP)</label>
+                    <input type="number" class="form-control" @bind="newMonster.MaxHitPoints" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Zorluk (CR)</label>
+                    <input type="text" class="form-control" @bind="newMonster.ChallengeRating" />
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-success" @onclick="SaveMonster">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="ToggleMonsterForm">İptal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Eşyalar (@WikiService.Items.Count)</h3>
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>İsim</th>
+                    <th>Tür</th>
+                    <th>Açıklama</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in WikiService.Items)
+                {
+                    <tr>
+                        <td><strong>@item.Name</strong></td>
+                        <td><span class="badge bg-secondary">@item.Type</span></td>
+                        <td>@item.Description</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 
     <div class="col-md-6">
-    <h3>Canavarlar (@WikiService.Monsters.Count)</h3>
-    <table class="table table-striped table-bordered">
-    <thead class="table-danger">
-    <tr>
-    <th>İsim</th>
-    <th>Zırh (AC)</th>
-    <th>Can (HP)</th>
-    <th>Zorluk (CR)</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var monster in WikiService.Monsters)
-{
-    <tr>
-        <td><strong>@monster.Name</strong></td>
-        <td>@monster.ArmorClass</td>
-        <td>@monster.MaxHitPoints</td>
-        <td>@monster.ChallengeRating</td>
-        </tr>
+        <h3>Canavarlar (@WikiService.Monsters.Count)</h3>
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-danger">
+                <tr>
+                    <th>İsim</th>
+                    <th>Zırh (AC)</th>
+                    <th>Can (HP)</th>
+                    <th>Zorluk (CR)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var monster in WikiService.Monsters)
+                {
+                    <tr>
+                        <td><strong>@monster.Name</strong></td>
+                        <td>@monster.ArmorClass</td>
+                        <td>@monster.MaxHitPoints</td>
+                        <td>@monster.ChallengeRating</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private bool isItemFormOpen = false;
+    private bool isMonsterFormOpen = false;
+
+    private Item newItem = new Item();
+    private Monster newMonster = new Monster();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await WikiService.LoadDataAsync();
+    }
+
+    private void ToggleItemForm() => isItemFormOpen = !isItemFormOpen;
+    private void ToggleMonsterForm() => isMonsterFormOpen = !isMonsterFormOpen;
+
+    private async Task SaveItem()
+    {
+        WikiService.Items.Add(newItem);
+        await WikiService.SaveDataAsync(); 
+        newItem = new Item(); 
+        isItemFormOpen = false; 
+    }
+
+    private async Task SaveMonster()
+    {
+        newMonster.CurrentHitPoints = newMonster.MaxHitPoints; 
+        WikiService.Monsters.Add(newMonster);
+        await WikiService.SaveDataAsync(); 
+        newMonster = new Monster();
+        isMonsterFormOpen = false;
+    }
 }
-</tbody>
-    </table>
-    </div>
-    </div>

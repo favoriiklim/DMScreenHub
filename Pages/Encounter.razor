@@ -1,0 +1,139 @@
+﻿@page "/encounter"
+@using DMScreen.Client.Models
+@using DMScreen.Client.Services
+@inject WikiService WikiService
+
+<PageTitle>Savaş Alanı</PageTitle>
+
+<div class="row" style="height: 85vh;">
+    <div class="col-md-3 bg-light p-3 border-end overflow-auto" style="height: 100%;">
+        <h4 class="border-bottom pb-2">Kütüphane</h4>
+        <p class="text-muted small">Haritaya eklemek için bir canavar seç:</p>
+        
+        <div class="list-group">
+            @foreach (var monster in WikiService.Monsters)
+            {
+                <button type="button" 
+                        class="list-group-item list-group-item-action @(selectedMonster?.Id == monster.Id ? "active" : "")"
+                        @onclick="() => SelectMonster(monster)">
+                    <strong>@monster.Name</strong> <br/>
+                    <small>HP: @monster.MaxHitPoints | AC: @monster.ArmorClass</small>
+                </button>
+            }
+            @if(WikiService.Monsters.Count == 0)
+            {
+                <div class="alert alert-warning">Wiki'de hiç canavar yok! Önce oradan canavar ekle.</div>
+            }
+        </div>
+
+        @if(selectedMonster != null)
+        {
+            <button class="btn btn-outline-danger w-100 mt-3" @onclick="ClearSelection">
+                <i class="bi bi-x-circle"></i> Seçimi İptal Et (Sadece Haritayı Yönet)
+            </button>
+        }
+        
+        <div class="mt-4 p-3 bg-white border rounded small">
+            <strong>İpuçları:</strong><br/>
+            🖱️ <b>Sol Tık:</b> Yeni canavar ekle<br/>
+            🖐️ <b>Sürükle-Bırak:</b> Canavarı hareket ettir<br/>
+            ❌ <b>Sağ Tık:</b> Canavarı haritadan sil
+        </div>
+    </div>
+
+    <div class="col-md-9 p-0 position-relative" 
+         style="height: 100%; background-color: #d1d8e0; border: 2px dashed #a5b1c2; overflow: hidden; cursor: crosshair;" 
+         @onclick="MapClicked"
+         ondragover="event.preventDefault();"
+         @ondrop="HandleDrop">
+        
+        @if (selectedMonster == null && activeTokens.Count == 0)
+        {
+            <div class="position-absolute top-50 start-50 translate-middle text-muted text-center">
+                <h3>Oyun Masası</h3>
+                <p>Sol taraftan bir canavar seç ve buraya tıklayarak yerleştir.</p>
+            </div>
+        }
+
+        @foreach (var token in activeTokens)
+        {
+            <div class="position-absolute badge bg-danger rounded-pill shadow-lg border border-white p-2" 
+                 style="left: @(token.X)px; top: @(token.Y)px; transform: translate(-50%, -50%); cursor: grab; font-size: 0.9rem;"
+                 draggable="true"
+                 @ondragstart="() => StartDrag(token)"
+                 @oncontextmenu="() => DeleteToken(token)"
+                 @oncontextmenu:preventDefault="true"
+                 @onclick:stopPropagation="true">
+                
+                @token.Name <br/>
+                <span class="badge bg-light text-dark mt-1">@token.CurrentHP / @token.MaxHP</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private Monster? selectedMonster;
+    private List<Token> activeTokens = new List<Token>();
+    
+    // Sürüklenen piyonu hafızada tutmak için
+    private Token? draggedToken;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await WikiService.LoadDataAsync();
+    }
+
+    private void SelectMonster(Monster monster)
+    {
+        selectedMonster = monster;
+    }
+
+    private void ClearSelection()
+    {
+        selectedMonster = null;
+    }
+
+    // Haritaya tıklandığında (Yeni ekleme)
+    private void MapClicked(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (selectedMonster != null)
+        {
+            var newToken = new Token
+            {
+                Name = selectedMonster.Name,
+                MaxHP = selectedMonster.MaxHitPoints,
+                CurrentHP = selectedMonster.MaxHitPoints,
+                X = e.OffsetX, 
+                Y = e.OffsetY  
+            };
+            
+            activeTokens.Add(newToken);
+        }
+    }
+
+    // --- SÜRÜKLE BIRAK VE SİLME İŞLEMLERİ ---
+
+    // Piyonu tuttuğumuz an
+    private void StartDrag(Token token)
+    {
+        draggedToken = token;
+    }
+
+    // Piyonu haritaya bıraktığımız an
+    private void HandleDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e)
+    {
+        if (draggedToken != null)
+        {
+            draggedToken.X = e.OffsetX;
+            draggedToken.Y = e.OffsetY;
+            draggedToken = null; // İşlem bitince hafızayı temizle
+        }
+    }
+
+    // Piyonun üzerine sağ tıklandığında
+    private void DeleteToken(Token token)
+    {
+        activeTokens.Remove(token);
+    }
+}
