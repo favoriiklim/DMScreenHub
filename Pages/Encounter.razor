@@ -12,145 +12,153 @@
     .vtt-token {
         width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
         font-weight: bold; color: white; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-        position: absolute; cursor: grab; user-select: none; transition: transform 0.1s;
+        position: absolute; cursor: grab; user-select: none; transition: transform 0.1s; z-index: 10;
     }
     .vtt-token:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1) !important; }
     
-    .token-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%); background-color: rgba(33, 37, 41, 0.95); color: white; text-align: center; padding: 8px 12px; border-radius: 6px; white-space: nowrap; z-index: 1000; transition: opacity 0.2s; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-    .token-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: rgba(33, 37, 41, 0.95) transparent transparent transparent; }
-    .vtt-token:hover .token-tooltip { visibility: visible; opacity: 1; }
+    /* Map Prop (Decoration) Styles */
+    .vtt-prop {
+        width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; position: absolute; cursor: grab; user-select: none; transition: all 0.2s; z-index: 5;
+    }
+    .vtt-prop:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1) !important; }
+    .prop-hidden { opacity: 0.4; filter: grayscale(50%); border: 2px dashed #dc3545; border-radius: 8px; background: rgba(220,53,69,0.1); }
+    
+    /* Tooltip Styles */
+    .vtt-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%); background-color: rgba(33, 37, 41, 0.95); color: white; text-align: center; padding: 8px 12px; border-radius: 6px; white-space: nowrap; z-index: 1000; transition: opacity 0.2s; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+    .vtt-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: rgba(33, 37, 41, 0.95) transparent transparent transparent; }
+    .vtt-token:hover .vtt-tooltip, .vtt-prop:hover .vtt-tooltip { visibility: visible; opacity: 1; }
 
-    /* HUD Toolbar */
-    .map-toolbar {
-        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-        z-index: 1050; background: rgba(255,255,255,0.95); padding: 8px 15px;
-        border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        display: flex; gap: 10px; align-items: center; border: 1px solid #dee2e6;
-    }
-
-    /* Gizli Dosya Seçici Buton Tasarımı */
-    .upload-btn-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
-    }
-    .upload-btn-wrapper input[type=file] {
-        font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer;
-    }
+    /* Map Basics */
+    .grid-map { background-image: linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px); background-size: 50px 50px; }
+    .map-toolbar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1050; background: rgba(255,255,255,0.95); padding: 8px 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; border: 1px solid #dee2e6; }
+    .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
+    .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
 </style>
 
 <div class="row" style="height: 85vh;">
     <div class="col-md-3 bg-light p-3 border-end overflow-auto" style="height: 100%; z-index: 10;">
-        <h4 class="border-bottom pb-2">Kütüphane</h4>
         
-        <div class="list-group mt-3">
-            @foreach (var monster in WikiService.Monsters)
-            {
-                <button type="button" 
-                        class="list-group-item list-group-item-action d-flex align-items-center @(SelectedMonster?.Id == monster.Id ? "active" : "")"
-                        @onclick="() => SelectMonster(monster)">
-                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" 
-                         style="min-width: 36px; height: 36px; background-color: @GetColorFromName(monster.Name); border: 2px solid rgba(255,255,255,0.5);">
-                        @GetInitials(monster.Name)
-                    </div>
-                    <div class="text-start">
-                        <strong>@monster.Name</strong> <br/>
-                        <small>HP: @monster.MaxHitPoints | AC: @monster.ArmorClass</small>
-                    </div>
-                </button>
-            }
+        <div class="btn-group w-100 mb-3" role="group">
+            <button class="btn @(CurrentSidebarView == SidebarView.Monsters ? "btn-dark" : "btn-outline-dark")" @onclick="() => SetSidebarView(SidebarView.Monsters)">
+                Canavarlar
+            </button>
+            <button class="btn @(CurrentSidebarView == SidebarView.Props ? "btn-dark" : "btn-outline-dark")" @onclick="() => SetSidebarView(SidebarView.Props)">
+                Objeler
+            </button>
         </div>
 
-        @if(SelectedMonster != null)
+        @if (CurrentSidebarView == SidebarView.Monsters)
         {
-            <button class="btn btn-outline-danger w-100 mt-3" @onclick="ClearSelection">
-                <i class="bi bi-x-circle"></i> Ekleme Modundan Çık
-            </button>
+            <div class="list-group">
+                @foreach (var monster in WikiService.Monsters)
+                {
+                    <button type="button" class="list-group-item list-group-item-action d-flex align-items-center @(SelectedMonster?.Id == monster.Id ? "active" : "")" @onclick="() => SelectMonster(monster)">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="min-width: 36px; height: 36px; background-color: @GetColorFromName(monster.Name); border: 2px solid rgba(255,255,255,0.5);">
+                            @GetInitials(monster.Name)
+                        </div>
+                        <div class="text-start">
+                            <strong>@monster.Name</strong> <br/>
+                            <small>HP: @monster.MaxHitPoints | AC: @monster.ArmorClass</small>
+                        </div>
+                    </button>
+                }
+            </div>
+            @if(SelectedMonster != null)
+            {
+                <button class="btn btn-outline-danger w-100 mt-3" @onclick="ClearSelection"><i class="bi bi-x-circle"></i> Seçimi Bırak</button>
+            }
+        }
+
+        @if (CurrentSidebarView == SidebarView.Props)
+        {
+            <div class="alert alert-info small">
+                Tıklayarak seç ve haritaya ekle. 
+                <br/><b>Shift + Sağ Tık:</b> Gizlilik durumunu değiştir.
+            </div>
+            
+            <div class="row g-2">
+                @foreach (var prop in AvailableProps)
+                {
+                    <div class="col-6">
+                        <button type="button" class="btn w-100 d-flex flex-column align-items-center p-2 @(SelectedProp?.Name == prop.Name ? "btn-primary" : "btn-outline-secondary") @(prop.IsHidden ? "border-danger border-2 border-dashed" : "")" @onclick="() => SelectProp(prop)">
+                            <span style="font-size: 2rem; line-height: 1;">@prop.Icon</span>
+                            <small class="mt-1" style="font-size: 0.75rem;">@prop.Name</small>
+                            @if(prop.IsHidden) { <span class="badge bg-danger mt-1" style="font-size: 0.6rem;">Gizli</span> }
+                        </button>
+                    </div>
+                }
+            </div>
+            @if(SelectedProp != null)
+            {
+                <button class="btn btn-outline-danger w-100 mt-3" @onclick="ClearSelection"><i class="bi bi-x-circle"></i> Seçimi Bırak</button>
+            }
         }
     </div>
 
     <div class="col-md-9 p-0 position-relative" style="height: 100%; background-color: #212529;">
         
         <div class="map-toolbar">
-            <button class="btn btn-sm @(IsGridVisible ? "btn-primary" : "btn-outline-secondary")" @onclick="ToggleGrid" title="Izgarayı Aç/Kapat">
-                <i class="bi bi-grid-3x3"></i>
-            </button>
-            
+            <button class="btn btn-sm @(IsGridVisible ? "btn-primary" : "btn-outline-secondary")" @onclick="ToggleGrid" title="Izgarayı Aç/Kapat"><i class="bi bi-grid-3x3"></i></button>
             <div class="vr mx-1"></div>
-            
-            <button class="btn btn-sm @(IsDrawMode ? "btn-danger" : "btn-outline-dark")" @onclick="ToggleDrawMode">
-                <i class="bi bi-pencil-square"></i> Duvar Çiz
-            </button>
-
-            <button class="btn btn-sm btn-outline-dark" @onclick="GenerateRandomDungeon" title="Rastgele Odalar Üret">
-                <i class="bi bi-magic"></i> Oto-Zindan
-            </button>
-
-            @if(Walls.Count > 0)
-            {
-                <button class="btn btn-sm btn-outline-danger" @onclick="ClearAllWalls" title="Tüm Duvarları Temizle">
-                    <i class="bi bi-trash"></i>
-                </button>
-            }
-
+            <button class="btn btn-sm @(IsDrawMode ? "btn-danger" : "btn-outline-dark")" @onclick="ToggleDrawMode"><i class="bi bi-pencil-square"></i> Duvar Çiz</button>
+            <button class="btn btn-sm btn-outline-dark" @onclick="GenerateRandomDungeon" title="Rastgele Odalar Üret"><i class="bi bi-magic"></i> Oto-Zindan</button>
+            @if(Walls.Count > 0){ <button class="btn btn-sm btn-outline-danger" @onclick="ClearAllWalls" title="Tüm Duvarları Temizle"><i class="bi bi-trash"></i></button> }
             <div class="vr mx-1"></div>
-
             <div class="upload-btn-wrapper">
                 <button class="btn btn-sm btn-outline-success"><i class="bi bi-image"></i> Harita Yükle</button>
                 <InputFile OnChange="HandleBackgroundUpload" accept="image/png, image/jpeg, image/webp" />
             </div>
-            
-            @if(!string.IsNullOrEmpty(BackgroundImageUrl))
-            {
-                <button class="btn btn-sm btn-outline-danger" @onclick="ClearBackground" title="Haritayı Kaldır">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            }
-
+            @if(!string.IsNullOrEmpty(BackgroundImageUrl)){ <button class="btn btn-sm btn-outline-danger" @onclick="ClearBackground" title="Haritayı Kaldır"><i class="bi bi-x-lg"></i></button> }
             <div class="vr mx-1"></div>
-
             <button class="btn btn-sm btn-outline-dark" @onclick="ZoomOut"><i class="bi bi-zoom-out"></i></button>
             <span class="fw-bold" style="width: 45px; text-align: center;">%@(Math.Round(ZoomLevel * 100))</span>
             <button class="btn btn-sm btn-outline-dark" @onclick="ZoomIn"><i class="bi bi-zoom-in"></i></button>
         </div>
 
         <div style="width: 100%; height: 100%; overflow: auto; position: relative;">
-            
             <div class="map-surface" 
                  style="width: 3000px; height: 3000px; background-color: #d1d8e0; position: absolute; top: 0; left: 0; 
-                        background-image: @GetMapBackgroundImage();
-                        background-size: @GetMapBackgroundSize();
-                        background-repeat: @GetMapBackgroundRepeat();
-                        background-position: top left;
+                        background-image: @GetMapBackgroundImage(); background-size: @GetMapBackgroundSize(); background-repeat: @GetMapBackgroundRepeat(); background-position: top left;
                         transform: scale(@ZoomLevel.ToString(CultureInfo.InvariantCulture)); transform-origin: top left; 
                         cursor: @(IsDrawMode ? "crosshair" : "default");"
-                 @onclick="HandleMapClick"
-                 @onmousedown="HandleMapMouseDown"
-                 @onmousemove="HandleMapMouseMove"
-                 @onmouseup="HandleMapMouseUp"
-                 ondragover="event.preventDefault();"
-                 @ondrop="HandleTokenDrop">
+                 @onclick="HandleMapClick" @onmousedown="HandleMapMouseDown" @onmousemove="HandleMapMouseMove" @onmouseup="HandleMapMouseUp"
+                 ondragover="event.preventDefault();" @ondrop="HandleItemDrop">
                 
                 <svg width="100%" height="100%" style="position: absolute; top:0; left:0; pointer-events: none; z-index: 1;">
                     @foreach(var wall in Walls)
                     {
-                        <line x1="@wall.X1" y1="@wall.Y1" x2="@wall.X2" y2="@wall.Y2" 
-                              stroke="#2c3e50" stroke-width="6" stroke-linecap="square" 
-                              style="pointer-events: stroke; cursor: pointer;"
-                              @oncontextmenu="(e) => HandleWallRightClick(e, wall)"
-                              @oncontextmenu:preventDefault="true" />
+                        <line x1="@wall.X1" y1="@wall.Y1" x2="@wall.X2" y2="@wall.Y2" stroke="#2c3e50" stroke-width="6" stroke-linecap="square" style="pointer-events: stroke; cursor: pointer;" @oncontextmenu="(e) => HandleWallRightClick(e, wall)" @oncontextmenu:preventDefault="true" />
                     }
                     @if(CurrentDrawingWall != null)
                     {
-                        <line x1="@CurrentDrawingWall.X1" y1="@CurrentDrawingWall.Y1" x2="@CurrentDrawingWall.X2" y2="@CurrentDrawingWall.Y2" 
-                              stroke="#e74c3c" stroke-width="6" stroke-linecap="square" stroke-dasharray="8,4" />
+                        <line x1="@CurrentDrawingWall.X1" y1="@CurrentDrawingWall.Y1" x2="@CurrentDrawingWall.X2" y2="@CurrentDrawingWall.Y2" stroke="#e74c3c" stroke-width="6" stroke-linecap="square" stroke-dasharray="8,4" />
                     }
                 </svg>
+
+                @foreach (var prop in ActiveProps)
+                {
+                    <div class="vtt-prop @(prop.IsHidden ? "prop-hidden" : "")" 
+                         style="left: @(prop.X)px; top: @(prop.Y)px; transform: translate(-50%, -50%);"
+                         draggable="true"
+                         @ondragstart="() => StartPropDrag(prop)"
+                         @oncontextmenu="(e) => HandlePropRightClick(e, prop)"
+                         @oncontextmenu:preventDefault="true"
+                         @onclick:stopPropagation="true">
+                        
+                        @prop.Icon
+
+                        <div class="vtt-tooltip">
+                            <strong>@prop.Name</strong><br/>
+                            @if(prop.IsHidden){ <span class="badge bg-danger mt-1">DM Görüşü (Gizli)</span> }
+                        </div>
+                    </div>
+                }
 
                 @foreach (var token in ActiveTokens)
                 {
                     <div class="vtt-token" 
-                         style="left: @(token.X)px; top: @(token.Y)px; transform: translate(-50%, -50%); background-color: @GetColorFromName(token.Name); z-index: 10;"
+                         style="left: @(token.X)px; top: @(token.Y)px; transform: translate(-50%, -50%); background-color: @GetColorFromName(token.Name);"
                          draggable="true"
                          @ondragstart="() => StartTokenDrag(token)"
                          @oncontextmenu="() => DeleteToken(token)"
@@ -159,7 +167,7 @@
                         
                         @GetInitials(token.Name)
 
-                        <div class="token-tooltip">
+                        <div class="vtt-tooltip">
                             <strong>@token.Name</strong><br/>
                             <span class="badge bg-danger mt-1">HP: @token.CurrentHP / @token.MaxHP</span>
                         </div>
@@ -171,298 +179,148 @@
 </div>
 
 @code {
+    // --- STATE ENUMS ---
+    private enum SidebarView { Monsters, Props }
+    
+    // --- STATE VARIABLES ---
+    private SidebarView CurrentSidebarView = SidebarView.Monsters;
+    
     private Monster? SelectedMonster;
     private List<Token> ActiveTokens = new List<Token>();
     private Token? DraggedToken;
+
+    // PROP VARIABLES
+    private MapProp? SelectedProp;
+    private List<MapProp> ActiveProps = new List<MapProp>();
+    private MapProp? DraggedProp;
+    
+    // Preset list of decor objects (UI Turkish, Backend English)
+    private List<MapProp> AvailableProps = new()
+    {
+        new MapProp { Name = "Sandık", Icon = "📦" },
+        new MapProp { Name = "Gizli Sandık", Icon = "📦", IsHidden = true },
+        new MapProp { Name = "Tuzak", Icon = "💀", IsHidden = true },
+        new MapProp { Name = "Kapı", Icon = "🚪" },
+        new MapProp { Name = "Gizli Kapı", Icon = "🚪", IsHidden = true },
+        new MapProp { Name = "Ateş / Meşale", Icon = "🔥" },
+        new MapProp { Name = "Heykel", Icon = "🗿" },
+        new MapProp { Name = "Masa", Icon = "🪵" },
+        new MapProp { Name = "Sandalye", Icon = "🪑" },
+        new MapProp { Name = "Lahit", Icon = "⚰️" },
+        new MapProp { Name = "Moloz / Taş", Icon = "🪨" },
+        new MapProp { Name = "Anahtar", Icon = "🗝️" },
+        new MapProp { Name = "Işık / Lumine", Icon = "✨" }
+    };
     
     private bool IsGridVisible = true;
     private bool IsDrawMode = false;
     private double ZoomLevel = 1.0;
+    private string BackgroundImageUrl = string.Empty;
 
     private List<Wall> Walls = new List<Wall>();
     private Wall? CurrentDrawingWall = null;
 
-    // YENİ: Arka Plan Resmi Değişkeni
-    private string BackgroundImageUrl = string.Empty;
-
     private const int GridSize = 50; 
 
+    // --- LIFECYCLE ---
     protected override async Task OnInitializedAsync()
     {
         await WikiService.LoadDataAsync();
     }
 
-    // --- ARKA PLAN VE CSS DİNAMİKLERİ ---
-    private async Task HandleBackgroundUpload(InputFileChangeEventArgs e)
+    // --- SIDEBAR METHODS ---
+    private void SetSidebarView(SidebarView view)
     {
-        var file = e.File;
-        if (file != null)
+        CurrentSidebarView = view;
+        ClearSelection();
+    }
+
+    private void ClearSelection()
+    {
+        SelectedMonster = null;
+        SelectedProp = null;
+        IsDrawMode = false;
+    }
+
+    private void SelectMonster(Monster monster) { SelectedMonster = monster; IsDrawMode = false; }
+    private void SelectProp(MapProp prop) { SelectedProp = prop; IsDrawMode = false; }
+
+    // --- MAP CLICK / DROP HANDLING ---
+    private void HandleMapClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (IsDrawMode) return;
+
+        if (CurrentSidebarView == SidebarView.Monsters && SelectedMonster != null)
         {
-            // Max 15 MB boyutunda harita yüklemeye izin veriyoruz
-            var maxAllowedSize = 15 * 1024 * 1024; 
-            using var stream = file.OpenReadStream(maxAllowedSize);
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            var base64 = Convert.ToBase64String(ms.ToArray());
-            
-            // Resmi Base64 string olarak CSS'e gömüyoruz
-            BackgroundImageUrl = $"data:{file.ContentType};base64,{base64}";
+            ActiveTokens.Add(new Token { Name = SelectedMonster.Name, MaxHP = SelectedMonster.MaxHitPoints, CurrentHP = SelectedMonster.MaxHitPoints, X = SnapToGrid(e.OffsetX), Y = SnapToGrid(e.OffsetY) });
+        }
+        else if (CurrentSidebarView == SidebarView.Props && SelectedProp != null)
+        {
+            ActiveProps.Add(new MapProp { Name = SelectedProp.Name, Icon = SelectedProp.Icon, IsHidden = SelectedProp.IsHidden, X = SnapToGrid(e.OffsetX), Y = SnapToGrid(e.OffsetY) });
         }
     }
 
-    private void ClearBackground() => BackgroundImageUrl = string.Empty;
-
-    // Grid ve Arka plan resmini aynı anda CSS'te göstermek için metotlar
-    private string GetMapBackgroundImage()
-    {
-        var gridLayer = "linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px)";
-        if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return $"{gridLayer}, url('{BackgroundImageUrl}')";
-        if (IsGridVisible) return gridLayer;
-        if (!string.IsNullOrEmpty(BackgroundImageUrl)) return $"url('{BackgroundImageUrl}')";
-        return "none";
-    }
-
-    private string GetMapBackgroundSize()
-    {
-        if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return "50px 50px, 50px 50px, cover";
-        if (IsGridVisible) return "50px 50px";
-        if (!string.IsNullOrEmpty(BackgroundImageUrl)) return "cover";
-        return "auto";
-    }
-
-    private string GetMapBackgroundRepeat()
-    {
-        if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return "repeat, repeat, no-repeat";
-        if (IsGridVisible) return "repeat";
-        if (!string.IsNullOrEmpty(BackgroundImageUrl)) return "no-repeat";
-        return "default";
-    }
-
-
-    private class DungeonRoom
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public int CenterX => X + (Width / 2);
-        public int CenterY => Y + (Height / 2);
-
-        // İki odanın üst üste binip binmediğini kontrol eden metot
-        public bool Intersects(DungeonRoom other)
+    // Unified Drop Handler for both Tokens and Props
+    private void HandleItemDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e) 
+    { 
+        if (DraggedToken != null) 
+        { 
+            DraggedToken.X = SnapToGrid(e.OffsetX); DraggedToken.Y = SnapToGrid(e.OffsetY); DraggedToken = null; 
+        } 
+        else if (DraggedProp != null)
         {
-            return (X <= other.X + other.Width && X + Width >= other.X &&
-                    Y <= other.Y + other.Height && Y + Height >= other.Y);
+            DraggedProp.X = SnapToGrid(e.OffsetX); DraggedProp.Y = SnapToGrid(e.OffsetY); DraggedProp = null; 
         }
     }
 
-    // --- ESKİ METODU SİLİP YERİNE BUNU YAPIŞTIR ---
-    private void GenerateRandomDungeon()
+    // --- PROP SPECIFIC METHODS ---
+    private void StartPropDrag(MapProp prop) => DraggedProp = prop;
+    
+    private void HandlePropRightClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, MapProp prop)
     {
-        Walls.Clear(); 
-        ActiveTokens.RemoveAll(t => t.Name == "GİRİŞ"); // Varsa eski giriş tokenini temizle
-        
-        int gridWidth = 40; // 2000 piksel / 50 piksel (Izgara sayısı)
-        int gridHeight = 40;
-        
-        // map: true = Duvar/Kaya, false = Boşluk/Zemin
-        bool[,] map = new bool[gridWidth, gridHeight];
-        
-        // Önce haritanın tamamını kayayla (true) dolduruyoruz
-        for (int x = 0; x < gridWidth; x++)
-            for (int y = 0; y < gridHeight; y++)
-                map[x, y] = true;
-
-        var rnd = new Random();
-        var rooms = new List<DungeonRoom>();
-
-        // 1. ADIM: Odaları Kaz
-        for (int i = 0; i < 25; i++) // 25 kere oda koymayı dene
+        if (e.ShiftKey)
         {
-            int w = rnd.Next(4, 9); // Oda genişliği (4 ile 8 kare arası)
-            int h = rnd.Next(4, 9); // Oda yüksekliği
-            int x = rnd.Next(2, gridWidth - w - 2);
-            int y = rnd.Next(2, gridHeight - h - 2);
-
-            var newRoom = new DungeonRoom { X = x, Y = y, Width = w, Height = h };
-            
-            // Diğer odalarla çakışıyor mu kontrol et (Etrafında 1 birim duvar payı bırakarak)
-            bool overlap = false;
-            foreach (var r in rooms)
-            {
-                var paddedRoom = new DungeonRoom { X = x - 1, Y = y - 1, Width = w + 2, Height = h + 2 };
-                if (paddedRoom.Intersects(r)) { overlap = true; break; }
-            }
-
-            if (!overlap) // Çakışmıyorsa listeye ekle ve haritada içini boşalt (false yap)
-            {
-                rooms.Add(newRoom);
-                for (int rx = x; rx < x + w; rx++)
-                    for (int ry = y; ry < y + h; ry++)
-                        map[rx, ry] = false;
-            }
+            // Toggle visibility for DM
+            prop.IsHidden = !prop.IsHidden;
         }
-
-        // 2. ADIM: Koridorları Kaz (Odaları birbirine bağla)
-        for (int i = 1; i < rooms.Count; i++)
+        else
         {
-            int x1 = rooms[i - 1].CenterX;
-            int y1 = rooms[i - 1].CenterY;
-            int x2 = rooms[i].CenterX;
-            int y2 = rooms[i].CenterY;
-
-            // Önce yatay koridor, sonra dikey koridor (L şeklinde bağlama)
-            int stepX = Math.Sign(x2 - x1);
-            if (stepX != 0)
-                for (int x = x1; x != x2 + stepX; x += stepX) map[x, y1] = false;
-            
-            int stepY = Math.Sign(y2 - y1);
-            if (stepY != 0)
-                for (int y = y1; y != y2 + stepY; y += stepY) map[x2, y] = false;
-        }
-
-        // 3. ADIM: Matematiksel matrisi SVG Duvar Çizgilerine Dönüştür
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                if (map[x, y] == false) // Eğer burası boşluk/zemin ise
-                {
-                    // Üst komşusu Duvar mı? Öyleyse üstüne çizgi çek.
-                    if (y == 0 || map[x, y - 1] == true)
-                        Walls.Add(new Wall { X1 = x * GridSize, Y1 = y * GridSize, X2 = (x + 1) * GridSize, Y2 = y * GridSize });
-                    
-                    // Alt komşusu Duvar mı?
-                    if (y == gridHeight - 1 || map[x, y + 1] == true)
-                        Walls.Add(new Wall { X1 = x * GridSize, Y1 = (y + 1) * GridSize, X2 = (x + 1) * GridSize, Y2 = (y + 1) * GridSize });
-
-                    // Sol komşusu Duvar mı?
-                    if (x == 0 || map[x - 1, y] == true)
-                        Walls.Add(new Wall { X1 = x * GridSize, Y1 = y * GridSize, X2 = x * GridSize, Y2 = (y + 1) * GridSize });
-
-                    // Sağ komşusu Duvar mı?
-                    if (x == gridWidth - 1 || map[x + 1, y] == true)
-                        Walls.Add(new Wall { X1 = (x + 1) * GridSize, Y1 = y * GridSize, X2 = (x + 1) * GridSize, Y2 = (y + 1) * GridSize });
-                }
-            }
-        }
-
-        // 4. ADIM: İlk Odaya Başlangıç / Giriş Noktası Ekle
-        if (rooms.Count > 0)
-        {
-            ActiveTokens.Add(new Token
-            {
-                Name = "GİRİŞ",
-                MaxHP = 999, CurrentHP = 999, // Ölümsüz bir işaretçi
-                // Tam merkeze oturtuyoruz
-                X = (rooms[0].CenterX * GridSize) + (GridSize / 2.0),
-                Y = (rooms[0].CenterY * GridSize) + (GridSize / 2.0)
-            });
+            ActiveProps.Remove(prop);
         }
     }
 
+    // --- TOKEN SPECIFIC METHODS ---
+    private void StartTokenDrag(Token token) => DraggedToken = token;
+    private void DeleteToken(Token token) => ActiveTokens.Remove(token);
 
-    // --- TOOLBAR METHODS ---
+    // --- WALL LOGIC ---
+    private void HandleWallRightClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, Wall wall) { if (e.ShiftKey) DeleteConnectedWalls(wall); else Walls.Remove(wall); }
+    private void DeleteConnectedWalls(Wall startWall) { var td = new HashSet<Wall> { startWall }; var q = new Queue<Wall>(); q.Enqueue(startWall); while (q.Count > 0) { var c = q.Dequeue(); var tw = Walls.Where(w => !td.Contains(w) && ((c.X1 == w.X1 && c.Y1 == w.Y1) || (c.X1 == w.X2 && c.Y1 == w.Y2) || (c.X2 == w.X1 && c.Y2 == w.Y1) || (c.X2 == w.X2 && c.Y2 == w.Y2))).ToList(); foreach(var t in tw) { td.Add(t); q.Enqueue(t); } } Walls.RemoveAll(w => td.Contains(w)); }
+    
+    // --- TOOLBAR & MATH ---
     private void ToggleGrid() => IsGridVisible = !IsGridVisible;
     private void ZoomIn() { if (ZoomLevel < 2.0) ZoomLevel += 0.2; }
     private void ZoomOut() { if (ZoomLevel > 0.4) ZoomLevel -= 0.2; }
     private void ToggleDrawMode() { IsDrawMode = !IsDrawMode; if (IsDrawMode) ClearSelection(); }
     private void ClearAllWalls() => Walls.Clear();
-
-    // --- MATH & CALCULATION ---
     private double SnapToGrid(double rawValue) => Math.Floor(rawValue / GridSize) * GridSize + (GridSize / 2.0);
     private double SnapToCorner(double rawValue) => Math.Round(rawValue / GridSize) * GridSize;
 
-    // --- MAP EVENTS ---
-    private void HandleMapMouseDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
-    {
-        if (IsDrawMode)
-        {
-            CurrentDrawingWall = new Wall { X1 = SnapToCorner(e.OffsetX), Y1 = SnapToCorner(e.OffsetY), X2 = SnapToCorner(e.OffsetX), Y2 = SnapToCorner(e.OffsetY) };
-        }
-    }
+    // --- PROCEDURAL DUNGEON GENERATOR ---
+    private class DungeonRoom { public int X { get; set; } public int Y { get; set; } public int Width { get; set; } public int Height { get; set; } public int CenterX => X + (Width / 2); public int CenterY => Y + (Height / 2); public bool Intersects(DungeonRoom other) { return (X <= other.X + other.Width && X + Width >= other.X && Y <= other.Y + other.Height && Y + Height >= other.Y); } }
+    private void GenerateRandomDungeon() { Walls.Clear(); ActiveTokens.RemoveAll(t => t.Name == "GİRİŞ"); int gw = 40; int gh = 40; bool[,] map = new bool[gw, gh]; for (int x = 0; x < gw; x++) for (int y = 0; y < gh; y++) map[x, y] = true; var rnd = new Random(); var rooms = new List<DungeonRoom>(); for (int i = 0; i < 25; i++) { int w = rnd.Next(4, 9); int h = rnd.Next(4, 9); int x = rnd.Next(2, gw - w - 2); int y = rnd.Next(2, gh - h - 2); var nr = new DungeonRoom { X = x, Y = y, Width = w, Height = h }; bool overlap = false; foreach (var r in rooms) if (new DungeonRoom { X = x - 1, Y = y - 1, Width = w + 2, Height = h + 2 }.Intersects(r)) { overlap = true; break; } if (!overlap) { rooms.Add(nr); for (int rx = x; rx < x + w; rx++) for (int ry = y; ry < y + h; ry++) map[rx, ry] = false; } } for (int i = 1; i < rooms.Count; i++) { int x1 = rooms[i - 1].CenterX; int y1 = rooms[i - 1].CenterY; int x2 = rooms[i].CenterX; int y2 = rooms[i].CenterY; int sx = Math.Sign(x2 - x1); if (sx != 0) for (int x = x1; x != x2 + sx; x += sx) map[x, y1] = false; int sy = Math.Sign(y2 - y1); if (sy != 0) for (int y = y1; y != y2 + sy; y += sy) map[x2, y] = false; } for (int x = 0; x < gw; x++) { for (int y = 0; y < gh; y++) { if (!map[x, y]) { if (y == 0 || map[x, y - 1]) Walls.Add(new Wall { X1 = x * GridSize, Y1 = y * GridSize, X2 = (x + 1) * GridSize, Y2 = y * GridSize }); if (y == gh - 1 || map[x, y + 1]) Walls.Add(new Wall { X1 = x * GridSize, Y1 = (y + 1) * GridSize, X2 = (x + 1) * GridSize, Y2 = (y + 1) * GridSize }); if (x == 0 || map[x - 1, y]) Walls.Add(new Wall { X1 = x * GridSize, Y1 = y * GridSize, X2 = x * GridSize, Y2 = (y + 1) * GridSize }); if (x == gw - 1 || map[x + 1, y]) Walls.Add(new Wall { X1 = (x + 1) * GridSize, Y1 = y * GridSize, X2 = (x + 1) * GridSize, Y2 = (y + 1) * GridSize }); } } } if (rooms.Count > 0) ActiveTokens.Add(new Token { Name = "GİRİŞ", MaxHP = 999, CurrentHP = 999, X = (rooms[0].CenterX * GridSize) + (GridSize / 2.0), Y = (rooms[0].CenterY * GridSize) + (GridSize / 2.0) }); }
 
-    private void HandleMapMouseMove(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
-    {
-        if (IsDrawMode && CurrentDrawingWall != null)
-        {
-            CurrentDrawingWall.X2 = SnapToCorner(e.OffsetX); CurrentDrawingWall.Y2 = SnapToCorner(e.OffsetY);
-        }
-    }
+    // --- BACKGROUND, MOUSE & HELPERS ---
+    private async Task HandleBackgroundUpload(InputFileChangeEventArgs e) { var f = e.File; if (f != null) { using var s = f.OpenReadStream(15 * 1024 * 1024); using var ms = new MemoryStream(); await s.CopyToAsync(ms); BackgroundImageUrl = $"data:{f.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}"; } }
+    private void ClearBackground() => BackgroundImageUrl = string.Empty;
+    private string GetMapBackgroundImage() { var gl = "linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px)"; if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return $"{gl}, url('{BackgroundImageUrl}')"; if (IsGridVisible) return gl; if (!string.IsNullOrEmpty(BackgroundImageUrl)) return $"url('{BackgroundImageUrl}')"; return "none"; }
+    private string GetMapBackgroundSize() { if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return "50px 50px, 50px 50px, cover"; if (IsGridVisible) return "50px 50px"; if (!string.IsNullOrEmpty(BackgroundImageUrl)) return "cover"; return "auto"; }
+    private string GetMapBackgroundRepeat() { if (IsGridVisible && !string.IsNullOrEmpty(BackgroundImageUrl)) return "repeat, repeat, no-repeat"; if (IsGridVisible) return "repeat"; if (!string.IsNullOrEmpty(BackgroundImageUrl)) return "no-repeat"; return "default"; }
+    
+    private void HandleMapMouseDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e) { if (IsDrawMode) CurrentDrawingWall = new Wall { X1 = SnapToCorner(e.OffsetX), Y1 = SnapToCorner(e.OffsetY), X2 = SnapToCorner(e.OffsetX), Y2 = SnapToCorner(e.OffsetY) }; }
+    private void HandleMapMouseMove(Microsoft.AspNetCore.Components.Web.MouseEventArgs e) { if (IsDrawMode && CurrentDrawingWall != null) { CurrentDrawingWall.X2 = SnapToCorner(e.OffsetX); CurrentDrawingWall.Y2 = SnapToCorner(e.OffsetY); } }
+    private void HandleMapMouseUp(Microsoft.AspNetCore.Components.Web.MouseEventArgs e) { if (IsDrawMode && CurrentDrawingWall != null) { if (CurrentDrawingWall.X1 != CurrentDrawingWall.X2 || CurrentDrawingWall.Y1 != CurrentDrawingWall.Y2) Walls.Add(CurrentDrawingWall); CurrentDrawingWall = null; } }
 
-    private void HandleMapMouseUp(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
-    {
-        if (IsDrawMode && CurrentDrawingWall != null)
-        {
-            if (CurrentDrawingWall.X1 != CurrentDrawingWall.X2 || CurrentDrawingWall.Y1 != CurrentDrawingWall.Y2) Walls.Add(CurrentDrawingWall);
-            CurrentDrawingWall = null; 
-        }
-    }
-
-    private void HandleMapClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
-    {
-        if (IsDrawMode) return;
-        if (SelectedMonster != null) ActiveTokens.Add(new Token { Name = SelectedMonster.Name, MaxHP = SelectedMonster.MaxHitPoints, CurrentHP = SelectedMonster.MaxHitPoints, X = SnapToGrid(e.OffsetX), Y = SnapToGrid(e.OffsetY) });
-    }
-    // --- WALL DELETION LOGIC ---
-
-    private void HandleWallRightClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, Wall wall)
-    {
-        if (e.ShiftKey)
-        {
-            // If Shift is pressed, delete all connected walls
-            DeleteConnectedWalls(wall);
-        }
-        else
-        {
-            // Normal right click, delete only the specific segment
-            Walls.Remove(wall);
-        }
-    }
-
-    private void DeleteConnectedWalls(Wall startWall)
-    {
-        var wallsToDelete = new HashSet<Wall> { startWall };
-        var queue = new Queue<Wall>();
-        queue.Enqueue(startWall);
-
-        // BFS algorithm to find all contiguous wall segments
-        while (queue.Count > 0)
-        {
-            var current = queue.Dequeue();
-            
-            var touchingWalls = Walls.Where(w => 
-                !wallsToDelete.Contains(w) && DoWallsTouch(current, w)
-            ).ToList();
-
-            foreach(var touchingWall in touchingWalls)
-            {
-                wallsToDelete.Add(touchingWall);
-                queue.Enqueue(touchingWall);
-            }
-        }
-
-        // Remove all found connected segments from the main list
-        Walls.RemoveAll(w => wallsToDelete.Contains(w));
-    }
-
-    private bool DoWallsTouch(Wall a, Wall b)
-    {
-        // Check if any endpoints of Wall A share exact coordinates with any endpoints of Wall B
-        return (a.X1 == b.X1 && a.Y1 == b.Y1) ||
-               (a.X1 == b.X2 && a.Y1 == b.Y2) ||
-               (a.X2 == b.X1 && a.Y2 == b.Y1) ||
-               (a.X2 == b.X2 && a.Y2 == b.Y2);
-    }
-
-    // --- TOKEN EVENTS ---
-    private void SelectMonster(Monster monster) { SelectedMonster = monster; IsDrawMode = false; }
-    private void ClearSelection() => SelectedMonster = null;
-    private void StartTokenDrag(Token token) => DraggedToken = token;
-    private void HandleTokenDrop(Microsoft.AspNetCore.Components.Web.DragEventArgs e) { if (DraggedToken != null) { DraggedToken.X = SnapToGrid(e.OffsetX); DraggedToken.Y = SnapToGrid(e.OffsetY); DraggedToken = null; } }
-    private void DeleteToken(Token token) => ActiveTokens.Remove(token);
-
-    // --- HELPERS ---
-    private string GetInitials(string name) { if (string.IsNullOrWhiteSpace(name)) return "?"; var p = name.Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 1 ? p[0].Substring(0, Math.Min(2, p[0].Length)).ToUpper() : (p[0].Substring(0, 1) + p[1].Substring(0, 1)).ToUpper(); }
-    private string GetColorFromName(string name) { if (string.IsNullOrWhiteSpace(name)) return "#6c757d"; int h = 0; foreach (char c in name) h = c + ((h << 5) - h); return $"#{Math.Abs((h & 0xFF0000) >> 16) % 150 + 50:X2}{Math.Abs((h & 0x00FF00) >> 8) % 150 + 50:X2}{Math.Abs(h & 0x0000FF) % 150 + 50:X2}"; }
+    private string GetInitials(string n) { if (string.IsNullOrWhiteSpace(n)) return "?"; var p = n.Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 1 ? p[0].Substring(0, Math.Min(2, p[0].Length)).ToUpper() : (p[0].Substring(0, 1) + p[1].Substring(0, 1)).ToUpper(); }
+    private string GetColorFromName(string n) { if (string.IsNullOrWhiteSpace(n)) return "#6c757d"; int h = 0; foreach (char c in n) h = c + ((h << 5) - h); return $"#{Math.Abs((h & 0xFF0000) >> 16) % 150 + 50:X2}{Math.Abs((h & 0x00FF00) >> 8) % 150 + 50:X2}{Math.Abs(h & 0x0000FF) % 150 + 50:X2}"; }
 }
