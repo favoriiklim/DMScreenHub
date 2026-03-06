@@ -3,161 +3,290 @@
 @using DMScreen.Client.Services
 @inject WikiService WikiService
 
-<PageTitle>DM Wiki</PageTitle>
+<PageTitle>DM Kütüphanesi</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Kütüphane (Wiki)</h1>
-    <div>
-        <button class="btn btn-primary me-2" @onclick="ToggleItemForm">
-            <i class="bi bi-plus-circle"></i> + Yeni Eşya
-        </button>
-        <button class="btn btn-danger" @onclick="ToggleMonsterForm">
-            <i class="bi bi-plus-circle"></i> + Yeni Canavar
-        </button>
-    </div>
-</div>
-
-@if (isItemFormOpen)
-{
-    <div class="card mb-4 border-primary">
-        <div class="card-header bg-primary text-white">Yeni Eşya Oluştur</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">İsim</label>
-                    <input type="text" class="form-control" @bind="newItem.Name" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Tür (Silah, İksir vb.)</label>
-                    <input type="text" class="form-control" @bind="newItem.Type" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Değer (Altın)</label>
-                    <input type="number" class="form-control" @bind="newItem.Value" />
-                </div>
-                <div class="col-md-12">
-                    <label class="form-label">Açıklama</label>
-                    <textarea class="form-control" @bind="newItem.Description"></textarea>
-                </div>
-                <div class="col-12 text-end">
-                    <button class="btn btn-success" @onclick="SaveItem">Kaydet</button>
-                    <button class="btn btn-secondary" @onclick="ToggleItemForm">İptal</button>
-                </div>
-            </div>
+<div class="row h-100">
+    <div class="col-md-4 border-end bg-light p-3" style="min-height: 85vh;">
+        
+        <div class="btn-group w-100 mb-3" role="group">
+            <button class="btn @(CurrentView == WikiView.Monsters ? "btn-dark" : "btn-outline-dark")" @onclick="() => SetView(WikiView.Monsters)">
+                <i class="bi bi-bug-fill"></i> Canavarlar
+            </button>
+            <button class="btn @(CurrentView == WikiView.Items ? "btn-dark" : "btn-outline-dark")" @onclick="() => SetView(WikiView.Items)">
+                <i class="bi bi-shield-shaded"></i> Eşyalar
+            </button>
         </div>
-    </div>
-}
 
-@if (isMonsterFormOpen)
-{
-    <div class="card mb-4 border-danger">
-        <div class="card-header bg-danger text-white">Yeni Canavar Oluştur</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">İsim</label>
-                    <input type="text" class="form-control" @bind="newMonster.Name" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Zırh (AC)</label>
-                    <input type="number" class="form-control" @bind="newMonster.ArmorClass" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Can (HP)</label>
-                    <input type="number" class="form-control" @bind="newMonster.MaxHitPoints" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Zorluk (CR)</label>
-                    <input type="text" class="form-control" @bind="newMonster.ChallengeRating" />
-                </div>
-                <div class="col-12 text-end">
-                    <button class="btn btn-success" @onclick="SaveMonster">Kaydet</button>
-                    <button class="btn btn-secondary" @onclick="ToggleMonsterForm">İptal</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<div class="row">
-    <div class="col-md-6">
-        <h3>Eşyalar (@WikiService.Items.Count)</h3>
-        <table class="table table-striped table-bordered shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>İsim</th>
-                    <th>Tür</th>
-                    <th>Açıklama</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in WikiService.Items)
-                {
-                    <tr>
-                        <td><strong>@item.Name</strong></td>
-                        <td><span class="badge bg-secondary">@item.Type</span></td>
-                        <td>@item.Description</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <div class="col-md-6">
-        <h3>Canavarlar (@WikiService.Monsters.Count)</h3>
-        <table class="table table-striped table-bordered shadow-sm">
-            <thead class="table-danger">
-                <tr>
-                    <th>İsim</th>
-                    <th>Zırh (AC)</th>
-                    <th>Can (HP)</th>
-                    <th>Zorluk (CR)</th>
-                </tr>
-            </thead>
-            <tbody>
+        @if (CurrentView == WikiView.Monsters)
+        {
+            <button class="btn btn-success w-100 mb-3" @onclick="CreateNewMonster"><i class="bi bi-plus-lg"></i> Yeni Canavar</button>
+            <div class="list-group">
                 @foreach (var monster in WikiService.Monsters)
                 {
-                    <tr>
-                        <td><strong>@monster.Name</strong></td>
-                        <td>@monster.ArmorClass</td>
-                        <td>@monster.MaxHitPoints</td>
-                        <td>@monster.ChallengeRating</td>
-                    </tr>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(SelectedMonster?.Id == monster.Id ? "active" : "")"
+                            @onclick="() => SelectMonster(monster)">
+                        <div>
+                            <strong>@monster.Name</strong><br/>
+                            <small class="text-muted @(SelectedMonster?.Id == monster.Id ? "text-light" : "")">CR: @monster.ChallengeRating | AC: @monster.ArmorClass</small>
+                        </div>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteMonster(monster)" @onclick:stopPropagation="true">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </button>
                 }
-            </tbody>
-        </table>
+            </div>
+        }
+        else
+        {
+            <button class="btn btn-success w-100 mb-3" @onclick="CreateNewItem"><i class="bi bi-plus-lg"></i> Yeni Eşya</button>
+            <div class="list-group">
+                @foreach (var item in WikiService.Items)
+                {
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(SelectedItem?.Id == item.Id ? "active" : "")"
+                            @onclick="() => SelectItem(item)">
+                        <div>
+                            <strong>@item.Name</strong><br/>
+                            <span class="badge bg-secondary">@item.Category</span>
+                        </div>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item)" @onclick:stopPropagation="true">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8 p-4">
+        
+        @if (SelectedMonster == null && SelectedItem == null)
+        {
+            <div class="text-center text-muted mt-5">
+                <i class="bi bi-journal-bookmark" style="font-size: 4rem;"></i>
+                <h4>Kütüphaneye Hoş Geldin</h4>
+                <p>İncelemek veya düzenlemek için soldan bir içerik seç.</p>
+            </div>
+        }
+
+        @if (SelectedMonster != null)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 border-danger">
+                <h2 class="text-danger m-0">@(IsEditing ? "Canavar Düzenle" : SelectedMonster.Name)</h2>
+                <button class="btn @(IsEditing ? "btn-primary" : "btn-outline-primary")" @onclick="ToggleEditMode">
+                    <i class="bi @(IsEditing ? "bi-eye" : "bi-pencil")"></i> @(IsEditing ? "İzleme Moduna Geç" : "Düzenle")
+                </button>
+            </div>
+
+            @if (IsEditing)
+            {
+                <div class="row g-3">
+                    <div class="col-md-6"><label>İsim</label><input class="form-control" @bind="SelectedMonster.Name" /></div>
+                    <div class="col-md-3"><label>Tür</label><input class="form-control" @bind="SelectedMonster.Type" /></div>
+                    <div class="col-md-3"><label>Yönelim</label><input class="form-control" @bind="SelectedMonster.Alignment" /></div>
+                    
+                    <div class="col-md-3"><label>Zırh (AC)</label><input type="number" class="form-control" @bind="SelectedMonster.ArmorClass" /></div>
+                    <div class="col-md-3"><label>Can (HP)</label><input type="number" class="form-control" @bind="SelectedMonster.MaxHitPoints" /></div>
+                    <div class="col-md-3"><label>Hız (ft)</label><input type="number" class="form-control" @bind="SelectedMonster.Speed" /></div>
+                    <div class="col-md-3"><label>Zorluk (CR)</label><input class="form-control" @bind="SelectedMonster.ChallengeRating" /></div>
+                    
+                    <div class="col-2"><label>STR</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Strength" /></div>
+                    <div class="col-2"><label>DEX</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Dexterity" /></div>
+                    <div class="col-2"><label>CON</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Constitution" /></div>
+                    <div class="col-2"><label>INT</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Intelligence" /></div>
+                    <div class="col-2"><label>WIS</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Wisdom" /></div>
+                    <div class="col-2"><label>CHA</label><input type="number" class="form-control text-center" @bind="SelectedMonster.Charisma" /></div>
+
+                    <div class="col-12"><label>Hikaye / Açıklama</label><textarea class="form-control" rows="3" @bind="SelectedMonster.Description"></textarea></div>
+                    <div class="col-12"><label>Saldırılar ve Yetenekler</label><textarea class="form-control" rows="4" @bind="SelectedMonster.Actions"></textarea></div>
+                    
+                    <div class="col-12 text-end">
+                        <button class="btn btn-success px-4" @onclick="SaveMonster">Kaydet</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p><em>@SelectedMonster.Type, @SelectedMonster.Alignment</em></p>
+                <hr style="color: #8b0000; border-width: 2px; opacity: 1;" />
+                <p><strong>Zırh Sınıfı (AC):</strong> @SelectedMonster.ArmorClass <br/>
+                   <strong>Can (HP):</strong> @SelectedMonster.MaxHitPoints <br/>
+                   <strong>Hız:</strong> @SelectedMonster.Speed ft.</p>
+                <hr style="color: #8b0000; border-width: 2px; opacity: 1;" />
+                
+                <div class="row text-center mb-3">
+                    <div class="col"><strong>STR</strong><br/>@SelectedMonster.Strength</div>
+                    <div class="col"><strong>DEX</strong><br/>@SelectedMonster.Dexterity</div>
+                    <div class="col"><strong>CON</strong><br/>@SelectedMonster.Constitution</div>
+                    <div class="col"><strong>INT</strong><br/>@SelectedMonster.Intelligence</div>
+                    <div class="col"><strong>WIS</strong><br/>@SelectedMonster.Wisdom</div>
+                    <div class="col"><strong>CHA</strong><br/>@SelectedMonster.Charisma</div>
+                </div>
+                <hr style="color: #8b0000; border-width: 2px; opacity: 1;" />
+                
+                <p><strong>Zorluk Derecesi (CR):</strong> @SelectedMonster.ChallengeRating</p>
+                
+                @if(!string.IsNullOrEmpty(SelectedMonster.Description)){ <h5>Açıklama</h5> <p>@SelectedMonster.Description</p> }
+                @if(!string.IsNullOrEmpty(SelectedMonster.Actions)){ <h5>Yetenekler ve Eylemler</h5> <p style="white-space: pre-wrap;">@SelectedMonster.Actions</p> }
+            }
+        }
+
+        @if (SelectedItem != null)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 border-primary">
+                <h2 class="text-primary m-0">@(IsEditing ? "Eşya Düzenle" : SelectedItem.Name)</h2>
+                <button class="btn @(IsEditing ? "btn-primary" : "btn-outline-primary")" @onclick="ToggleEditMode">
+                    <i class="bi @(IsEditing ? "bi-eye" : "bi-pencil")"></i> @(IsEditing ? "İzleme Moduna Geç" : "Düzenle")
+                </button>
+            </div>
+
+            @if (IsEditing)
+            {
+                <div class="row g-3">
+                    <div class="col-md-6"><label>İsim</label><input class="form-control" @bind="SelectedItem.Name" /></div>
+                    <div class="col-md-6">
+                        <label>Etiket (Tür)</label>
+                        <select class="form-select" @bind="SelectedItem.Category">
+                            @foreach(var cat in ItemCategories)
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4"><label>Nadirliği</label><input class="form-control" @bind="SelectedItem.Rarity" /></div>
+                    <div class="col-md-4"><label>Değer (Altın)</label><input type="number" class="form-control" @bind="SelectedItem.Value" /></div>
+                    <div class="col-md-4"><label>Ağırlık (lbs)</label><input type="number" step="0.1" class="form-control" @bind="SelectedItem.Weight" /></div>
+
+                    <div class="col-12"><label>Görünüm / Hikaye</label><textarea class="form-control" rows="3" @bind="SelectedItem.Description"></textarea></div>
+                    <div class="col-12"><label>Mekanik Kurallar ve Hasar</label><textarea class="form-control" rows="4" @bind="SelectedItem.MechanicalRules"></textarea></div>
+                    
+                    <div class="col-12 text-end">
+                        <button class="btn btn-success px-4" @onclick="SaveItem">Kaydet</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <span class="badge bg-primary fs-6 mb-2">@SelectedItem.Category</span>
+                <span class="badge bg-secondary fs-6 mb-2">@SelectedItem.Rarity</span>
+                <hr/>
+                <p><strong>Değer:</strong> @SelectedItem.Value gp | <strong>Ağırlık:</strong> @SelectedItem.Weight lbs</p>
+                <hr/>
+                @if(!string.IsNullOrEmpty(SelectedItem.Description)){ <h5>Açıklama</h5> <p>@SelectedItem.Description</p> }
+                @if(!string.IsNullOrEmpty(SelectedItem.MechanicalRules)){ <h5>Mekanik Özellikler</h5> <p style="white-space: pre-wrap;">@SelectedItem.MechanicalRules</p> }
+            }
+        }
+
     </div>
 </div>
 
 @code {
-    private bool isItemFormOpen = false;
-    private bool isMonsterFormOpen = false;
+    // --- STATE ENUMS & VARIABLES ---
+    private enum WikiView { Monsters, Items }
+    private WikiView CurrentView = WikiView.Monsters;
 
-    private Item newItem = new Item();
-    private Monster newMonster = new Monster();
+    private Monster? SelectedMonster = null;
+    private Item? SelectedItem = null;
+    
+    private bool IsEditing = false;
+    private bool IsCreatingNew = false;
 
+    // The tags you requested
+    private List<string> ItemCategories = new() { "Silah", "Zırh", "Kalkan", "İksir", "Büyülü Eşya", "Büyü", "Eşya" };
+
+    // --- LIFECYCLE ---
     protected override async Task OnInitializedAsync()
     {
         await WikiService.LoadDataAsync();
     }
 
-    private void ToggleItemForm() => isItemFormOpen = !isItemFormOpen;
-    private void ToggleMonsterForm() => isMonsterFormOpen = !isMonsterFormOpen;
-
-    private async Task SaveItem()
+    // --- NAVIGATION ---
+    private void SetView(WikiView view)
     {
-        WikiService.Items.Add(newItem);
-        await WikiService.SaveDataAsync(); 
-        newItem = new Item(); 
-        isItemFormOpen = false; 
+        CurrentView = view;
+        ClearSelection();
+    }
+
+    private void ClearSelection()
+    {
+        SelectedMonster = null;
+        SelectedItem = null;
+        IsEditing = false;
+        IsCreatingNew = false;
+    }
+
+    private void ToggleEditMode() => IsEditing = !IsEditing;
+
+    // --- MONSTER CRUD METHODS ---
+    private void SelectMonster(Monster monster)
+    {
+        SelectedMonster = monster;
+        IsEditing = false;
+        IsCreatingNew = false;
+    }
+
+    private void CreateNewMonster()
+    {
+        SelectedMonster = new Monster();
+        IsEditing = true;
+        IsCreatingNew = true;
     }
 
     private async Task SaveMonster()
     {
-        newMonster.CurrentHitPoints = newMonster.MaxHitPoints; 
-        WikiService.Monsters.Add(newMonster);
-        await WikiService.SaveDataAsync(); 
-        newMonster = new Monster();
-        isMonsterFormOpen = false;
+        if (SelectedMonster != null)
+        {
+            if (IsCreatingNew)
+            {
+                SelectedMonster.CurrentHitPoints = SelectedMonster.MaxHitPoints;
+                WikiService.Monsters.Add(SelectedMonster);
+            }
+            await WikiService.SaveDataAsync();
+            IsEditing = false;
+            IsCreatingNew = false;
+        }
+    }
+
+    private async Task DeleteMonster(Monster monster)
+    {
+        WikiService.Monsters.Remove(monster);
+        await WikiService.SaveDataAsync();
+        if (SelectedMonster?.Id == monster.Id) ClearSelection();
+    }
+
+    // --- ITEM CRUD METHODS ---
+    private void SelectItem(Item item)
+    {
+        SelectedItem = item;
+        IsEditing = false;
+        IsCreatingNew = false;
+    }
+
+    private void CreateNewItem()
+    {
+        SelectedItem = new Item();
+        IsEditing = true;
+        IsCreatingNew = true;
+    }
+
+    private async Task SaveItem()
+    {
+        if (SelectedItem != null)
+        {
+            if (IsCreatingNew)
+            {
+                WikiService.Items.Add(SelectedItem);
+            }
+            await WikiService.SaveDataAsync();
+            IsEditing = false;
+            IsCreatingNew = false;
+        }
+    }
+
+    private async Task DeleteItem(Item item)
+    {
+        WikiService.Items.Remove(item);
+        await WikiService.SaveDataAsync();
+        if (SelectedItem?.Id == item.Id) ClearSelection();
     }
 }
